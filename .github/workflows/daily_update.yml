@@ -2,8 +2,10 @@ name: Daily Data Update
 
 on:
   schedule:
-    # 每天美东时间下午 5:00（即收盘后一小时，夏令时 21:00 UTC，冬令时 22:00 UTC）自动运行以获取最新数据
+    # 每天美东时间下午 5:00（收盘后一小时，夏令时 21:00 UTC）自动运行
     - cron: '0 21 * * 1-5'
+    # 每天美东时间上午 9:00（开盘前，夏令时 13:00 UTC）自动运行
+    - cron: '0 13 * * 1-5'
   workflow_dispatch: # 允许在 GitHub Actions 页面上手动触发运行
 
 permissions:

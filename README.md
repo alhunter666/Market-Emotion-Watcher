@@ -17,16 +17,9 @@
 
 ## ✍️ 人工手写审计与备注区 (Human Audit Logs)
 > [!NOTE]
-> **本区域专门预留给人类督导（Gatekeeper）进行手写审计备注、变更意见及手动签发记录。**
-> 请在此处填写您的手写备注、对策略表现的评估以及本次迭代的审计意见：
-
-```text
-[人工审计日志 - 待人类督导手写补充]
-日期: 
-审计员: 
-审计结论: 
-手写备注/修改建议:
-- 
+>I learnt to ask antigravity to give me a summary of error and potential causes and fixes first before doing anything, because of this i made progress
+> part of the errors are because i made fix manually either on github or local and didnt update others, so there are misalignment
+> when there's error, that is very difficult to fix!
 - 
 - 
 ```

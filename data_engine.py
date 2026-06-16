@@ -167,6 +167,9 @@ def run_data_engine(force=False):
         
         # 强时序强对齐防 NaN 截断：前向与后向填充，最后以 0 兜底，绝不丢弃交易日行数
         close_df = close_df.ffill().bfill().fillna(0.0)
+        # 清除尾部因 ffill 填充产生的完全重复的无数据交易日行（以 S&P 500 指数相同为判断标准）
+        while len(close_df) > 1 and close_df['^GSPC'].iloc[-1] == close_df['^GSPC'].iloc[-2]:
+            close_df = close_df.iloc[:-1]
     else:
         # yfinance 统一合并抓取，降低请求频次以杜绝限流。历史拉取跨度升级为 3y
         yf_tickers = ["^VIX", "^VXTLT", "^COR1M", "XLY", "XLP", "^GSPC"] + ALL_30_TICKERS + SECTOR_ETFS
@@ -190,6 +193,9 @@ def run_data_engine(force=False):
             close_df = close_df.reindex(gspc_index)
             # 强时序强对齐防 NaN 截断：前向与后向填充，最后以 0 兜底，绝不丢弃交易日行数
             close_df = close_df.ffill().bfill().fillna(0.0)
+            # 清除尾部因 ffill 填充产生的完全重复的无数据交易日行（以 S&P 500 指数相同为判断标准）
+            while len(close_df) > 1 and close_df['^GSPC'].iloc[-1] == close_df['^GSPC'].iloc[-2]:
+                close_df = close_df.iloc[:-1]
             
         except Exception as e:
             print(f"警告: 从 yfinance 抓取行情数据失败 ({e})。尝试从历史缓存恢复...")
@@ -201,6 +207,9 @@ def run_data_engine(force=False):
                     gspc_index = close_df.index
                     # 强对齐处理
                     close_df = close_df.ffill().bfill().fillna(0.0)
+                    # 清除尾部因 ffill 填充产生的完全重复的无数据交易日行（以 S&P 500 指数相同为判断标准）
+                    while len(close_df) > 1 and close_df['^GSPC'].iloc[-1] == close_df['^GSPC'].iloc[-2]:
+                        close_df = close_df.iloc[:-1]
                     print("成功从本地历史缓存中恢复行情数据。")
             else:
                 raise RuntimeError(f"行情数据获取失败且本地无备份缓存: {e}")

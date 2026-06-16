@@ -161,15 +161,12 @@ def run_data_engine(force=False):
     raw_cache = load_raw_data_cache(force)
     
     if raw_cache is not None:
-        close_df = raw_cache['close_df']
+        close_df_raw = raw_cache['close_df']
         fred_raw = raw_cache['fred_raw']
         dix_raw = raw_cache['dix_raw']
         
         # 强时序强对齐防 NaN 截断：前向与后向填充，最后以 0 兜底，绝不丢弃交易日行数
-        close_df = close_df.ffill().bfill().fillna(0.0)
-        # 清除尾部因 ffill 填充产生的完全重复的无数据交易日行（以 S&P 500 指数相同为判断标准）
-        while len(close_df) > 1 and close_df['^GSPC'].iloc[-1] == close_df['^GSPC'].iloc[-2]:
-            close_df = close_df.iloc[:-1]
+        close_df = close_df_raw.ffill().bfill().fillna(0.0)
     else:
         # yfinance 统一合并抓取，降低请求频次以杜绝限流。历史拉取跨度升级为 3y
         yf_tickers = ["^VIX", "^VXTLT", "^COR1M", "XLY", "XLP", "^GSPC"] + ALL_30_TICKERS + SECTOR_ETFS
@@ -183,19 +180,16 @@ def run_data_engine(force=False):
             
             # 提取收盘价
             if isinstance(all_yf_data.columns, pd.MultiIndex):
-                close_df = all_yf_data['Close']
+                close_df_raw = all_yf_data['Close']
             else:
-                close_df = all_yf_data
+                close_df_raw = all_yf_data
                 
             # 提取标普 500 指数基准用于 Reindex 强对齐
-            gspc_index = close_df['^GSPC'].index
+            gspc_index = close_df_raw['^GSPC'].index
             # 所有 30 只成分股及行业板块对齐锁：以 ^GSPC 的 DatetimeIndex 进行 reindex 对齐
-            close_df = close_df.reindex(gspc_index)
+            close_df_raw = close_df_raw.reindex(gspc_index)
             # 强时序强对齐防 NaN 截断：前向与后向填充，最后以 0 兜底，绝不丢弃交易日行数
-            close_df = close_df.ffill().bfill().fillna(0.0)
-            # 清除尾部因 ffill 填充产生的完全重复的无数据交易日行（以 S&P 500 指数相同为判断标准）
-            while len(close_df) > 1 and close_df['^GSPC'].iloc[-1] == close_df['^GSPC'].iloc[-2]:
-                close_df = close_df.iloc[:-1]
+            close_df = close_df_raw.ffill().bfill().fillna(0.0)
             
         except Exception as e:
             print(f"警告: 从 yfinance 抓取行情数据失败 ({e})。尝试从历史缓存恢复...")
@@ -203,13 +197,10 @@ def run_data_engine(force=False):
             if os.path.exists(CACHE_FILE):
                 with open(CACHE_FILE, 'rb') as f:
                     old_cache = pickle.load(f)
-                    close_df = old_cache['close_df']
-                    gspc_index = close_df.index
+                    close_df_raw = old_cache['close_df']
+                    gspc_index = close_df_raw.index
                     # 强对齐处理
-                    close_df = close_df.ffill().bfill().fillna(0.0)
-                    # 清除尾部因 ffill 填充产生的完全重复的无数据交易日行（以 S&P 500 指数相同为判断标准）
-                    while len(close_df) > 1 and close_df['^GSPC'].iloc[-1] == close_df['^GSPC'].iloc[-2]:
-                        close_df = close_df.iloc[:-1]
+                    close_df = close_df_raw.ffill().bfill().fillna(0.0)
                     print("成功从本地历史缓存中恢复行情数据。")
             else:
                 raise RuntimeError(f"行情数据获取失败且本地无备份缓存: {e}")
@@ -224,7 +215,7 @@ def run_data_engine(force=False):
         
         # 保存至本地缓存
         save_raw_data_cache({
-            'close_df': close_df,
+            'close_df': close_df_raw,
             'fred_raw': fred_raw,
             'dix_raw': dix_raw
         })
@@ -313,7 +304,9 @@ def run_data_engine(force=False):
 
     # 【新增指标】：美股 11 大行业板块今日全景涨跌幅计算
     # 计算每日百分比变化并取最后一天作为今日变动
-    sector_pct_changes = close_df[SECTOR_ETFS].pct_change() * 100
+    sector_pct_changes = close_df_raw[SECTOR_ETFS].pct_change() * 100
+    # 前向填充百分比变化，防止最新一天的 NaN 导致涨跌幅归零
+    sector_pct_changes = sector_pct_changes.ffill().fillna(0.0)
     results['sectors_today'] = {
         etf: round(float(sector_pct_changes[etf].iloc[-1]), 2) for etf in SECTOR_ETFS
     }

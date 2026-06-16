@@ -1,0 +1,40 @@
+name: Daily Data Update
+
+on:
+  schedule:
+    # 每天美东时间下午 5:00（即收盘后一小时，夏令时 21:00 UTC，冬令时 22:00 UTC）自动运行以获取最新数据
+    - cron: '0 21 * * 1-5'
+  workflow_dispatch: # 允许在 GitHub Actions 页面上手动触发运行
+
+permissions:
+  contents: write # 必须显式声明写权限，否则 Actions 将无法 push 更新后的数据文件
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip' # 启用 pip 缓存以加快后续运行速度
+
+      - name: Install dependencies
+        run: |
+          python -m pip upgrade pip
+          pip install yfinance pandas python-dotenv numpy
+
+      - name: Run data engine
+        run: python data_engine.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add metrics_data.json
+          # 仅在数据确有变化时提交，避免空提交报错
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update market data [skip ci]"
+          git push

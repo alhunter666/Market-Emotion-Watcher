@@ -414,3 +414,120 @@ with col10:
         <p style="margin: 0; font-size: 12px; border-top: 1px solid #111111; padding-top: 4px;">{dix_caption}</p>
     </div>
     """, unsafe_allow_html=True)
+
+# ----------------------------------------------------
+# 杠杆投资回报率（Leverage ROI）计算器 (Form Layout)
+# ----------------------------------------------------
+st.markdown("<hr style='border: 1px solid #111111; margin-top: 25px; margin-bottom: 20px;'>", unsafe_allow_html=True)
+st.markdown("<h3 style='margin:0 0 15px 0; font-size: 16px; font-weight: bold;'>四、 杠杆投资回报率 (Leverage ROI) 计算器</h3>", unsafe_allow_html=True)
+
+with st.form("leverage_roi_form"):
+    col_input1, col_input2, col_input3 = st.columns(3)
+    
+    with col_input1:
+        borrowed_amount = st.number_input(
+            "借入金额 (美元)",
+            min_value=1000.0,
+            max_value=200000.0,
+            value=50000.0,
+            step=1000.0,
+            format="%.2f",
+            help="范围: 1,000 到 200,000"
+        )
+    with col_input2:
+        stock_return_percent = st.number_input(
+            "股票预期年化收益率 (%)",
+            min_value=-30.0,
+            max_value=50.0,
+            value=15.0,
+            step=1.0,
+            format="%.2f",
+            help="范围: -30.0% 到 50.0%"
+        )
+    with col_input3:
+        margin_interest_percent = st.number_input(
+            "保证金利率 (%)",
+            min_value=1.0,
+            max_value=10.0,
+            value=5.13,
+            step=0.01,
+            format="%.2f",
+            help="范围: 1.0% 到 10.0%"
+        )
+    
+    # 提交按钮（Streamlit 表单规范要求）
+    submitted = st.form_submit_button("计算回报")
+
+# 实时计算逻辑
+gross_profit_loss = borrowed_amount * (stock_return_percent / 100.0)
+interest_payment = borrowed_amount * (margin_interest_percent / 100.0)
+net_profit = gross_profit_loss - interest_payment
+
+# 零分母防零/空值安全过滤 (零分母铁律)
+if borrowed_amount > 0:
+    net_roi = (net_profit / borrowed_amount) * 100.0
+else:
+    net_roi = 0.0
+
+# 结果渲染
+col_res1, col_res2, col_res3, col_res4 = st.columns(4)
+
+with col_res1:
+    st.markdown(f"""
+    <div class="bloomberg-card" style="min-height: 120px;">
+        <h4>股票总收益/亏损</h4>
+        <div>
+            <p style="font-size: 20px; font-weight: bold; margin: 0;" class="{'bb-green' if gross_profit_loss >= 0 else 'bb-red'}">
+                ${gross_profit_loss:,.2f}
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_res2:
+    st.markdown(f"""
+    <div class="bloomberg-card" style="min-height: 120px;">
+        <h4>年化利息支出</h4>
+        <div>
+            <p style="font-size: 20px; font-weight: bold; margin: 0; color: #111111 !important;">
+                ${interest_payment:,.2f}
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_res3:
+    st.markdown(f"""
+    <div class="bloomberg-card" style="min-height: 120px;">
+        <h4>最终净利润</h4>
+        <div>
+            <p style="font-size: 20px; font-weight: bold; margin: 0;" class="{'bb-green' if net_profit >= 0 else 'bb-red'}">
+                ${net_profit:,.2f}
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_res4:
+    st.markdown(f"""
+    <div class="bloomberg-card" style="min-height: 120px;">
+        <h4>实际净回报率 (ROI)</h4>
+        <div>
+            <p style="font-size: 20px; font-weight: bold; margin: 0;" class="{'bb-green' if net_roi >= 0 else 'bb-red'}">
+                {net_roi:+.2f}%
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# 负收益视觉预警
+if net_profit < 0:
+    st.markdown(
+        "<div class='liquidity-alert-banner' style='margin-top: 15px;'>"
+        "<p style='color: #D92626 !important; margin: 0; font-weight: bold; font-size: 14px; text-align: center;'>"
+        "⚠️ 杠杆警示：当前预期收益不足以覆盖保证金利息成本，最终净回报为负，请高度警惕穿仓与财务杠杆反噬风险！"
+        "</p>"
+        "</div>",
+        unsafe_allow_html=True
+    )
+

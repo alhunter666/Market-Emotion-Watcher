@@ -6,7 +6,7 @@
     "vxtlt_change": 0.0,
     "cor1m_last": 16.42,
     "opex_date": "2026-11-20",
-    "days_to_opex": 4,
+    "days_to_opex": 3,
     "opex_warning": true,
     "ratio_last": 1.2759,
     "ratio_20ma": 1.3094,
@@ -44,9 +44,9 @@
     "liquidity_q90": 6400.0,
     "oas_last": 3.5,
     "oas_20ma": 3.5,
-    "dix_last": 0.444971,
+    "dix_last": 0.409306,
     "dix_yesterday": 0.444971,
-    "dix_change": 0.0,
-    "gex_last": 6127404508.98,
+    "dix_change": -0.035665,
+    "gex_last": 2555664309.74,
     "institution_buy_signal": false
 }
